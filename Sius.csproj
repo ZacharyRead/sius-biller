@@ -1,0 +1,100 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectGuid>{505E8CBD-787F-4E07-96D7-EB32A846B957}</ProjectGuid>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Sius</RootNamespace>
+    <AssemblyName>Sius</AssemblyName>
+    <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
+    <NoStdLib>False</NoStdLib>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>Full</DebugType>
+    <Optimize>False</Optimize>
+    <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <DebugSymbols>False</DebugSymbols>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+    <DefineConstants>TRACE</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'AnyCPU' ">
+    <RegisterForComInterop>False</RegisterForComInterop>
+    <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
+    <BaseAddress>4194304</BaseAddress>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <FileAlignment>4096</FileAlignment>
+  </PropertyGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.Targets" />
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.SQLite">
+      <HintPath>..\..\..\Program Files\SQLite.NET\bin\System.Data.SQLite.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Listen.cs" />
+    <Compile Include="Player.cs" />
+    <Compile Include="Message.cs" />
+    <Compile Include="Protocol\Banner.cs" />
+    <Compile Include="Protocol\Chat.cs" />
+    <Compile Include="Protocol\Cmd.cs" />
+    <Compile Include="Protocol\Commands\Btime.cs" />
+    <Compile Include="Protocol\Commands\Buptime.cs" />
+    <Compile Include="Protocol\Commands\Bversion.cs" />
+    <Compile Include="Protocol\Commands\Bzone.cs" />
+    <Compile Include="Protocol\Commands\Bzones.cs" />
+    <Compile Include="Protocol\Commands\Chat.cs" />
+    <Compile Include="Protocol\Commands\Find.cs" />
+    <Compile Include="Protocol\Commands\Messages.cs" />
+    <Compile Include="Protocol\Commands\Password.cs" />
+    <Compile Include="Protocol\Commands\Squad.cs" />
+    <Compile Include="Protocol\Commands\Squadcreate.cs" />
+    <Compile Include="Protocol\Commands\Squaddissolve.cs" />
+    <Compile Include="Protocol\Commands\Squadgrant.cs" />
+    <Compile Include="Protocol\Commands\Squadjoin.cs" />
+    <Compile Include="Protocol\Commands\Squadkick.cs" />
+    <Compile Include="Protocol\Commands\Squadleave.cs" />
+    <Compile Include="Protocol\Commands\Squadlist.cs" />
+    <Compile Include="Protocol\Commands\Squadowner.cs" />
+    <Compile Include="Protocol\Commands\Squadpassword.cs" />
+    <Compile Include="Protocol\Commands\UserID.cs" />
+    <Compile Include="Protocol\Connect.cs" />
+    <Compile Include="Protocol\Log.cs" />
+    <Compile Include="Protocol\Penterarena.cs" />
+    <Compile Include="Protocol\Ping.cs" />
+    <Compile Include="Protocol\Pleave.cs" />
+    <Compile Include="Protocol\Plogin.cs" />
+    <Compile Include="Protocol\Rmt.cs" />
+    <Compile Include="Protocol\Rmtsqd.cs" />
+    <Compile Include="Protocol\Scorereset.cs" />
+    <Compile Include="SiusEncrypt.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Sius.cs" />
+    <Compile Include="SiusConf.cs" />
+    <Compile Include="SiusLog.cs" />
+    <Compile Include="SiusUtil.cs" />
+    <Compile Include="SQLite.cs" />
+    <Compile Include="Zone.cs" />
+    <None Include="app.config" />
+    <None Include="new-biller-prot.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Protocol" />
+    <Folder Include="Properties" />
+    <Folder Include="Protocol\Commands" />
+  </ItemGroup>
+</Project>

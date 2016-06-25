@@ -1,0 +1,346 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+	<head>
+		<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+		<meta name="description" content="subspace billing server protocol proposal version 1.3.1" />
+		<meta name="author" content="Grelminar" />
+		<title>New Biller Protocol</title>
+	</head>
+	<body style="font-family:Lucida Console; font-size:10pt;">
+	<p>
+		subspace billing server protocol proposal<br />
+		version 1.3.1<br />
+		<a href="mailto:grelminar@yahoo.com">grelminar@yahoo.com</a>
+	</p>
+	
+	<p>
+		all communication goes over a single tcp socket. messages are lines,<br />
+		delimited by linefeed characters (ascii 10) (although servers and<br />
+		clients should accept CR, LF, and CRLF). fields within a message are<br />
+		delimited by colons (ascii 58). the first field is the type of the<br />
+		message. each type has a fixed number of fields to expect, so the last<br />
+		field can contain colons without confusing anything. integer values in<br />
+		fields should be in decimal. all lines will be no more than 1023<br />
+		characters in length (including LF). either side may discard lines<br />
+		longer than that length if it receives them.
+	</p>
+	
+	<p>
+		the game server will initiate a tcp connection to the billing server on<br />
+		the agreed port.
+	</p>
+	
+	<p>
+		(from now on, I'm going to get lazy, and call the game server "the<br />
+		server", and the billing server "the biller". i'll use <span style="color:indigo;">g-&gt;b</span> and <span style="color:forestgreen;">b-&gt;g</span> to<br />
+		describe the two directions.)
+	</p>
+	
+	<p>
+		the protocol is versioned with a three-part number (major revision,<br />
+		minor revision, patch). backwards compatbility is guaranteed when two<br />
+		version differ only by the patch number. when two versions differ by a<br />
+		major or minor revision number, all bets are off.
+	</p>
+	
+	<p>
+		the server sends the protocol version that it speaks to the biller. if<br />
+		the biller supports it (and everything else is ok), the biller can reply<br />
+		successfully and a connection is established. if the biller doesn't<br />
+		support the version requested (module the patch number), or if anything<br />
+		else is wrong with the login, it should return failure and close the<br />
+		connection. no further protocol version negociation takes places.
+	</p>
+	
+	<ul style="margin-top:30px;">
+		<li><a href="#login">server login stuff</a></li>
+		<li><a href="#plogin">player login stuff</a></li>
+		<li><a href="#registration">player registration (optional)</a></li>
+		<li><a href="#banners">banners</a></li>
+		<li><a href="#status">player status changes</a></li>
+		<li><a href="#messaging">messaging</a></li>
+		<li><a href="#misc">misc.</a></li>
+	</ul>
+	
+	<p style="margin-top:30px;"><b><a name="login">::::: server login stuff</a></b></p>
+	
+	<p>
+		to login:<br />
+		<span style="color:indigo;">g-&gt;b</span>: "<span style="color:red;">CONNECT:version:swname:zonename:hostname:password</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">version</span> is the version of the protocol used. it should have three<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">numbers</span> separated by dots (major, minor, patch). the current version<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;is at the top of this document.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">swname</span> is something idenifying the software used, like "<span style="color:red;">asss 1.0.5</span>".<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">zonename</span> is the name of this zone, like "<span style="color:red;">A Small Warzone</span>".<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">hostname</span> is where this zone is hosted, like "<span style="color:red;">SSCX</span>".<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">password</span> is a password to authenticate this zone.
+	</p>
+	<p>
+		the response will either be this:<br />
+		<span style="color:forestgreen;">b-&gt;g</span>: "<span style="color:red;">CONNECTOK:swname:billername</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">swname</span> is something identifying the biller used, like "<span style="color:red;">mybiller 0.29</span>".<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">billername</span> is a string identifying this biller network, like "<span style="color:red;">SSC</span>".<br />
+		or<br />
+		<span style="color:forestgreen;">b-&gt;g</span>: "<span style="color:red;">CONNECTBAD:swname:billername:reason</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">swname</span> and <span style="color:blue">billername</span> are as above.<br />
+ 		   reason is something describing why the connection was refused, like<br />
+ 		   "<span style="color:red;">bad password</span>", or "<span style="color:red;">wrong protocol version</span>".
+	</p>
+	<p>
+		the biller will most likely close the connection after sending a<br />
+		CONNECTBAD, but if it doesn't, the game server should.
+	</p>
+	<p>
+		the rest can only be used after a successful connection.
+	</p>
+	
+	<p style="margin-top:30px;"><b><a name="plogin">::::: player login stuff</a></b></p>
+	
+	<p>
+		game sends:<br />
+		<span style="color:indigo;">g-&gt;b</span>: "<span style="color:red;">PLOGIN:pid:flag:name:pw:ip:macid:contid</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">pid</span> is the player id assigned to this player by the server.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">flag</span> is 0 for a normal login, 1 for "<span style="color:red;">i want to create a new player</span>".<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">name</span> is the name that's trying to log in.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">pw</span> is the password he's using.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">ip</span> is the address he's connecting from (in dotted decimal).<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">macid</span> is the standard machine id of the player.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">contid</span> is the id data from continuum players. if the player isn't<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;using cont, it should be empty. if the player is using cont, it will<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;be the cont id, encoded in 128 characters, using plain hex encoding<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;with lowercase letters.
+	</p>
+	
+	<p>
+		biller responds with either:<br />
+		<span style="color:forestgreen;">b-&gt;g</span>: "<span style="color:red;">POK:pid:rtext:name:squad:billerid:usage:firstused</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">pid</span> is the player id that was passed in PLOGIN.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">rtext</span> is additional text that can be delivered to the client. if<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;there are no complications logging in, it should be empty.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">name</span> is the name assigned by the biller (the biller can change the<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;name of a player if desired).<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">squad</span> is the player's squad.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">billerid</span> is an id number assigned by the billing server.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">usage</span> is the number of seconds that this player has ever been<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;connected to this biller.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">firstused</span> is a string describing when this named account was<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;created, in roughly this form: "<span style="color:red;">1-2-1999 6:13:35</span>"<br />
+		or<br />
+		<span style="color:forestgreen;">b-&gt;g</span>: "<span style="color:red;">PBAD:pid:newname:rtext</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">pid</span> is the player id passed in PLOGIN.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">newname</span> is 1 if the requested name doesn't exist in the biller's<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;database and is available for creation. it is 0 otherwise.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">rtext</span> is some text describing the reason this login was denied.
+	</p>
+	
+	<p style="margin-top:30px;"><b><a name="registration">::::: player registration (optional)</a></b></p>
+	
+	<p>
+		_before_ sending a POK, the biller can request registration information<br />
+		by sending:<br />
+		<span style="color:forestgreen;">b-&gt;g</span>: "<span style="color:red;">WANTREG:pid</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">pid</span> is the pid for which registration information is requested.
+	</p>
+	
+	<p>
+		the server may eventually respond:<br />
+		<span style="color:indigo;">g-&gt;b</span>: "<span style="color:red;">REGDATA:pid:data</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">pid</span> is the pid of the player whose information is being submitted.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">data</span> is hex-encoded binary data containing the registration<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;information. the format or length of this data is not specified in<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;this document, and may be client-specific.
+	</p>
+	
+	<p style="margin-top:30px;"><b><a name="banners">::::: banners</a></b></p>
+	
+	<p>
+		the biller can send this any any time, but will typically send it right<br />
+		after a PLOGINOK message:<br />
+		<span style="color:forestgreen;">b-&gt;g</span>: "<span style="color:red;">BNR:pid:banner</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">pid</span> is the pid of the player setting his banner.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">banner</span> is a 96-byte banner, encoded using standard hex encoding with<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;lowercase letters, so it will be 192 bytes long.
+	</p>
+	
+	<p>
+		when a player sets his banner, the server will update the biller with:<br />
+		<span style="color:indigo;">g-&gt;b</span>: "<span style="color:red;">BNR:pid:banner</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">pid</span> the the pid of the player setting his banner.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">banner</span> is the new banner, encoded as above.
+	</p>
+		
+	<p style="margin-top:30px;"><b><a name="status">::::: player status changes</a></b></p>
+	
+	<p>
+		when a player enters an arena for the first time after logging in, the<br />
+		server sends:<br />
+		<span style="color:indigo;">g-&gt;b</span>: "<span style="color:red;">PENTERARENA:pid</span>"
+	</p>
+	
+	<p>
+		when a player disconnects from the server, the server sends:<br />
+		<span style="color:indigo;">g-&gt;b</span>: "<span style="color:red;">PLEAVE:pid</span>"
+	</p>
+	
+	<p>
+		the biller can request that the server disconnect a player by sending:<br />
+		<span style="color:forestgreen;">b-&gt;g</span>: "<span style="color:red;">PKICK:pid:reason</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">pid</span> is the pid of the player to be kicked.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">reason</span> is some text describing the reason the player was kicked.
+	</p>
+		
+	<p style="margin-top:30px;"><b><a name="messaging">::::: messaging</a></b></p>
+	
+	<p>
+		when a player sends a ?chat message, the server sends:<br />
+		<span style="color:indigo;">g-&gt;b</span>: "<span style="color:red;">CHAT:pid:channel:sound:text</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">pid</span> is the sending player.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">channel</span> is the name of the channel. alternatively, it can be a<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;number signifying which of the player's channels the message is<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;intended for.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">sound</span> is a sound code, to be interpreted by the client.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">text</span> is the text of the message.
+	</p>
+	
+	<p>
+		when a player gets a ?chat message, the server receives:<br />
+		<span style="color:forestgreen;">b-&gt;g</span>: "<span style="color:red;">CHATTXT:channel:sender:sound:text</span>"<br />
+		<span style="color:forestgreen;">b-&gt;g</span>: "<span style="color:red;">CHAT:pid:number</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">channel</span> is the name of the channel that this message is on.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">sender</span> is the name of the player who sent the message.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">sound</span> is a sound code.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">text</span> is the text of the message.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">pid</span> is the pid of a player who received the message.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">number</span> is what channel that player should see the message as coming<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;from.
+	</p>
+	
+	<p>
+		&nbsp;&nbsp;&nbsp;&nbsp;the CHATTXT message is used so that the biller can send a chat<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;message to many players on one server without sending the full text<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;and sender name to each of them. the contents of the CHATTXT message<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;should be cached on the server, and the text used for any following<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;CHAT messages, until the next CHATTXT. for example, if the server<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;gets "<span style="color:red;">CHATTXT:sscx:player:0:hello</span>" and then "<span style="color:red;">CHAT:22:3</span>", player 22<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;should see something like "<span style="color:red;">3:player> hello</span>".
+	</p>
+	
+	<p>
+		when a player sends a remote private message:<br />
+		<span style="color:indigo;">g-&gt;b</span>: "<span style="color:red;">RMT:pid:destination:sound:text</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">pid</span> is the pid of the sending player.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">destination</span> is the player the message is being sent to.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">sound</span> is a sound code.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">text</span> is the text of a message.
+	</p>
+	<p>
+		when a player receives a remove private message:<br />
+		<span style="color:forestgreen;">b-&gt;g</span>: "<span style="color:red;">RMT:pid:sender:sound:text</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">pid</span> is the pid of the player receiving the message.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">sender</span> is the name of the sending player.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">sound</span> is a sound code.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">text</span> is the text of the message.
+	</p>
+	
+	<p>
+		when a player sends a squad message:<br />
+		<span style="color:indigo;">g-&gt;b</span>: "<span style="color:red;">RMTSQD:pid:destsquad:sound:text</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">pid</span> is the pid of the sender.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">destsquad</span> is the name of the squad whose players should receive the<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">message</span> (no leading #).<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">sound</span> is a sound code.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">text</span> is the text of the message.
+	</p>
+	
+	<p>
+		when a player receives a squad message:<br />
+		<span style="color:forestgreen;">b-&gt;g</span>: "<span style="color:red;">RMTSQD:destsquad:sender:sound:text</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">destsquad</span> is the squad that the message is for.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">sender</span> is the name of the sending player.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">sound</span> is a sound code.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">text</span> is the text of the message.
+	</p>
+	
+	<p>
+		when a player types a command that the server doesn't interpret, or that<br />
+		the server knows should go to the billing server:<br />
+		<span style="color:indigo;">g-&gt;b</span>: "<span style="color:red;">CMD:pid:cmdname:args</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">pid</span> is the pid of the sending player.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">cmdname</span> is the name of the command.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">args</span> is the arguments to the command (what was typed after the<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;command name.
+	</p>
+	
+	<p>
+		when the server wants to send a player some message (usually as the<br />
+		result of a command):<br />
+		<span style="color:forestgreen;">b-&gt;g</span>: "<span style="color:red;">MSG:pid:sound:text</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">pid</span> is the pid of the recipient.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">sound</span> is a sound code.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">text</span> is the text of the message.
+	</p>
+	
+	<p>
+		when the server wants to send some of its log output to the biller,<br />
+		perhaps so logs document malicious activity can be gatherd and analyzed<br />
+		for many zones at once, it can send:<br />
+		<span style="color:indigo;">g-&gt;b</span>: "<span style="color:red;">LOG:pid:logtext</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;if the log message refers to the activity of a specific player, the<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">pid</span> field will hold the pid of that player. if not, it should be<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;empty (zero-length).<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;logtext is the text of the log message, in whatever format the<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;server chooses.
+	</p>
+	
+	<p>
+		if the biller wants to send a message to only staff members of a zone,<br />
+		it can send:<br />
+		<span style="color:forestgreen;">b-&gt;g</span>: "<span style="color:red;">STAFFMSG:sender:sound:text</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">sender</span> is the optional name of whoever sent this message. if it was<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;generated by the billing server, it should be empty.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">sound</span> is a sound code.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">text</span> is the text of the message.
+	</p>
+	
+	<p>
+		if the biller wants to send a message to the entire zone (e.g., for<br />
+		scheduled downtime or other important events), it can send:<br />
+		<span style="color:forestgreen;">b-&gt;g</span>: "<span style="color:red;">BROADCAST:sender:sound:text</span>"<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">sender</span> is the optional name of whoever sent this message. if it was<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;generated by the billing server, it should be empty.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">sound</span> is a sound code.<br />
+		&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue">text</span> is the text of the message.
+	</p>
+	
+	<p>
+		if the server is going down (for a shutdown or whatever), it should<br />
+		close the tcp socket. if the biller is going down (for any reason), it<br />
+		should close the tcp socket.
+	</p>
+		
+	<p style="margin-top:30px;"><b><a name="misc">::::: misc.</a></b></p>
+	
+	<p>
+		either side is allowed to send ping messages which act as a keepalive to<br />
+		force tcp to detect when one or the other side of the connection crashes<br />
+		or becomes unavailable. a suggested interval between pings is 180<br />
+		seconds, although neither side should assume anything about the interval<br />
+		that the other side is using, and should send its own keepalives if it<br />
+		wants quick notification if the other side crashes or becomes<br />
+		unavailable.
+	</p>
+	
+	<p>
+		<span style="color:forestgreen;">b-&gt;g</span>: "<span style="color:red;">PING</span>"<br />
+		<span style="color:indigo;">g-&gt;b</span>: "<span style="color:red;">PING</span>"
+	</p>
+	
+	<p>
+		the biller can indicate that it's time for a scorereset by sending:<br />
+		<span style="color:forestgreen;">b-&gt;g</span>: "<span style="color:red;">SCORERESET</span>"
+	</p>
+		
+	<p style="color:green; margin-top:30px"># dist: public</p>
+	</body>
+</html>
