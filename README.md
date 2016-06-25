@@ -47,19 +47,23 @@ matches. Open up the configuration file entitled
 "Sius.exe.config" (any text editor will suffice),
 and edit the port value and password value as needed.
 
+```xml
 <add key="port" value="500" />
 <add key="password" value="password" />
+```
 
 For ASSS users, you will have to match those two values
 in your global.conf file, along with the biller's IP
 address (127.0.0.1 if running on the same computer)
 and your zone's name under the billing section as so:
 
+```ini
 [Billing]
 IP = 127.0.0.1
 Port = 500
 ServerName = My Zone
 Password = password
+```
 
 You may edit other settings as needed.
 
