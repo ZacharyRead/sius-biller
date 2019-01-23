@@ -1,8 +1,9 @@
-#Sius 1.0
+# Sius 1.0
+
 by Zachary Read
 
 
-##What is it?
+## What is it?
 
 Sius is configurable SubSpace/Continuum biller that
 allows you to connect as many zones as you would like,
@@ -15,7 +16,8 @@ and squad support.
 It is designed specifically to work with the game server
 "A Small SubSpace Server (ASSS)".
 
-##Getting started
+## Getting started
+
 This application is written in C# and was designed for
 Windows, though it's possible to get it working on
 Linux. You will need to open the project and build it
@@ -23,7 +25,7 @@ using a tool like Visual Studio. The project is also
 reliant on SQLite: https://www.sqlite.org/.
 
 
-##Launching the application
+## Launching the application
 
 To use Sius, simply double click on the file named
 "Sius.exe". To close the biller, simply press any key
@@ -39,7 +41,7 @@ The full protocol is detailed in the file
 "new-biller-prot.html".
 
 
-##Configuration
+## Configuration
 
 To have your zone successfully connect to the biller,
 make sure that the respective billing information
@@ -71,19 +73,19 @@ ASSS users should also make sure that, in modules.conf,
 you are running the "billing" module and not the
 "billing_ssc" module.
 
-##Supported in-game commands
+## Supported in-game commands
 
-###Messaging:
+### Messaging:
 ?message, ?messages, ?chat
 
-###Squad:
+### Squad:
 ?squad, ?squadcreate, ?squadjoin, ?squadowner,
 ?squadlist, ?squadkick, ?squadgrant, ?squadleave,
 ?squaddissolve, ?squadpassword
 
-###Biller:
+### Biller:
 ?buptime, ?btime, ?bversion, ?bzones (?zones),
 ?bzone
 
-###Other:
+### Other:
 ?find, ?password, ?userid
